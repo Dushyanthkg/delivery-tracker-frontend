@@ -1,26 +1,133 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: #f8fafc;
+  color: #0f172a;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ---------------- Leaflet overrides ---------------- */
+
+.leaflet-container {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background: #e2e8f0;
+}
+/* Background behind tiles while a dark style loads (set by BaseLayer). */
+.leaflet-container.map-dark {
+  background: #18181b;
+}
+
+/* Rider marker: body + rotating arrow + soft pulse */
+.rider-marker {
+  background: transparent;
+  border: 0;
+}
+.rider-marker__inner {
+  position: absolute;
+  inset: 0;
+}
+.rider-marker__body {
+  position: absolute;
+  inset: 4px;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  background: var(--rider-color, #4f46e5);
+  color: #fff;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgb(15 23 42 / 0.35);
+}
+.rider-marker__arrow {
+  /* Rotation is set imperatively per animation frame — no CSS transition. */
+  will-change: transform;
+}
+.rider-marker__pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--rider-color, #4f46e5) 35%, transparent);
+  animation: rider-pulse 2s ease-out infinite;
+}
+.rider-marker.is-offline .rider-marker__body {
+  background: var(--rider-offline, #94a3b8);
+}
+.rider-marker.is-offline .rider-marker__pulse {
+  display: none;
+}
+@keyframes rider-pulse {
+  0% { transform: scale(0.7); opacity: 0.9; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
+.place-marker {
+  background: transparent;
+  border: 0;
+  filter: drop-shadow(0 2px 3px rgb(15 23 42 / 0.3));
+}
+.place-marker--selected svg {
+  transform: scale(1.2);
+  transform-origin: bottom center;
+}
+
+.rider-tooltip {
+  font-weight: 600;
+}
+
+/* Viewer's own position — "current location" button */
+.my-location {
+  background: transparent;
+  border: 0;
+  pointer-events: none;
+}
+.my-location__inner {
+  position: absolute;
+  inset: 0;
+}
+.my-location__dot {
+  position: absolute;
+  inset: 4px;
+  border-radius: 9999px;
+  background: var(--my-location, #1a73e8);
+  border: 2.5px solid #fff;
+  box-shadow: 0 1px 4px rgb(15 23 42 / 0.4);
+}
+.my-location__halo {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--my-location, #1a73e8) 30%, transparent);
+  animation: rider-pulse 2.4s ease-out infinite;
+}
+
+/* ---------------- 3D (MapLibre) view ---------------- */
+
+.map3d .maplibregl-map {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+/* Leave room for the "Follow rider" pill in the top-right corner. */
+.map3d .maplibregl-ctrl-top-right {
+  top: 44px;
+}
+.map3d .maplibregl-ctrl-attrib {
+  font-size: 11px;
+}
+.map3d-tooltip .maplibregl-popup-content {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0f172a;
+  box-shadow: 0 1px 4px rgb(15 23 42 / 0.25);
+}
+.map3d-tooltip .maplibregl-popup-tip {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rider-marker__pulse { animation: none; }
+  .my-location__halo { animation: none; }
 }

@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Delivery Rider</string>
+    <string name="title_activity_main">Delivery Rider</string>
+    <string name="package_name">com.deliverytracker.rider</string>
+    <string name="custom_url_scheme">com.deliverytracker.rider</string>
+
+    <!-- @capacitor-community/background-geolocation: persistent "tracking" notification -->
+    <string name="capacitor_background_geolocation_notification_channel_name">Delivery tracking</string>
+    <string name="capacitor_background_geolocation_notification_icon">drawable/ic_tracking</string>
+    <string name="capacitor_background_geolocation_notification_color">#2563EB</string>
+</resources>
