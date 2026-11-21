@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { authApi, errorMessage } from '@/services/api';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -28,6 +28,20 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', role: 'customer' as SelfRegisterRole });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const signedIn = useRef(false);
+
+  // Next keeps this page alive (hidden) after we navigate away, so on the way
+  // out after a successful sign-in, clear the spinner and the password — otherwise
+  // logging out later returns to a stuck "Sign in" button with the password filled.
+  useLayoutEffect(() => {
+    return () => {
+      if (!signedIn.current) return;
+      signedIn.current = false;
+      setSubmitting(false);
+      setError(null);
+      setForm((f) => ({ ...f, password: '' }));
+    };
+  }, []);
 
   // Already signed in → go to your area.
   useEffect(() => {
@@ -52,6 +66,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
               role: form.role,
               ...(form.phone ? { phone: form.phone } : {}),
             });
+      signedIn.current = true;
       setSession(auth); // effect above redirects
     } catch (err) {
       setError(errorMessage(err));
