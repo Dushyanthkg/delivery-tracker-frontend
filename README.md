@@ -23,6 +23,16 @@ Demo logins (after `npm run seed` in the backend): `customer@demo.com`, `rider@d
 
 Real GPS (`Start Delivery`) needs HTTPS or `localhost`. To test on a phone, tunnel both ports (e.g. `cloudflared tunnel --url http://localhost:3000`).
 
+## Testing
+
+```bash
+npm test             # Vitest
+npm run test:watch
+npm run typecheck && npm run lint
+```
+
+Tests sit next to the code (`*.test.ts(x)`): geo and format helpers, the live tracking and map-preference stores, and the login form (including the stuck "Sign in" spinner after logout, which only shows up because Next keeps pages alive in `<Activity>`). CI (`.github/workflows/ci.yml`) runs lint, typecheck, tests and a production build on every push and pull request.
+
 ## Structure
 
 ```
