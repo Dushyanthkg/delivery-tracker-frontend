@@ -1,25 +1,425 @@
 @import "tailwindcss";
 
+/* `dark:` utilities follow the resolved app theme (data-theme on <html>), not just the OS. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Design tokens
+   Raw values live on :root (light) and :root[data-theme="dark"]; the @theme
+   block below maps them to Tailwind utilities (bg-surface, text-muted, …).
+   data-theme is set before first paint by the inline script in app/layout.tsx
+   (system preference unless the viewer picked one — see lib/theme.ts).
+
+   Map colours (components/map/theme.ts) mirror the brand / place tokens as
+   hex; tokens.test.ts fails if they drift apart.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces & text */
+  --bg: oklch(0.985 0.003 265);
+  --surface: oklch(1 0 0);
+  --surface-raised: oklch(1 0 0);
+  --surface-muted: oklch(0.967 0.005 265);
+  --border: oklch(0.91 0.006 265);
+  --border-strong: oklch(0.84 0.01 265);
+  --text: oklch(0.21 0.02 265);
+  --text-muted: oklch(0.47 0.02 265);
+  --text-subtle: oklch(0.54 0.016 265);
+
+  /* Brand */
+  --brand: oklch(0.51 0.23 277);
+  --brand-hover: oklch(0.46 0.22 277);
+  --brand-fg: oklch(1 0 0);
+  --brand-soft: oklch(0.955 0.025 277);
+  --brand-text: oklch(0.48 0.22 277);
+
+  /* Feedback — solid (white text on it), soft (tint), text (on soft or surface) */
+  --success: oklch(0.53 0.13 155);
+  --success-soft: oklch(0.96 0.04 155);
+  --success-text: oklch(0.47 0.12 155);
+  --warning: oklch(0.77 0.16 75);
+  --warning-fg: oklch(0.25 0.05 70);
+  --warning-soft: oklch(0.97 0.05 85);
+  --warning-text: oklch(0.5 0.12 60);
+  --danger: oklch(0.55 0.21 25);
+  --danger-soft: oklch(0.965 0.02 20);
+  --danger-text: oklch(0.5 0.19 25);
+  --info: oklch(0.55 0.14 240);
+  --info-soft: oklch(0.96 0.025 240);
+  --info-text: oklch(0.48 0.13 240);
+
+  /* Order status — solid (dots, timeline), soft (badge bg), text (badge label) */
+  --status-pending: var(--warning);
+  --status-pending-soft: var(--warning-soft);
+  --status-pending-text: var(--warning-text);
+  --status-assigned: var(--info);
+  --status-assigned-soft: var(--info-soft);
+  --status-assigned-text: var(--info-text);
+  --status-picked-up: var(--brand);
+  --status-picked-up-soft: var(--brand-soft);
+  --status-picked-up-text: var(--brand-text);
+  --status-in-transit: oklch(0.5 0.21 300);
+  --status-in-transit-soft: oklch(0.96 0.03 300);
+  --status-in-transit-text: oklch(0.47 0.2 300);
+  --status-delivered: var(--success);
+  --status-delivered-soft: var(--success-soft);
+  --status-delivered-text: var(--success-text);
+  --status-cancelled: oklch(0.55 0.015 265);
+  --status-cancelled-soft: oklch(0.955 0.005 265);
+  --status-cancelled-text: oklch(0.45 0.015 265);
+
+  /* Places (same in both themes — they sit on the map) */
+  --pickup: oklch(0.55 0.2 262);
+  --dropoff: oklch(0.53 0.14 150);
+
+  /* Elevation — soft, layered */
+  --shadow-color: 230 25% 15%;
+  --elev-1: 0 1px 2px hsl(var(--shadow-color) / 0.06), 0 1px 1px hsl(var(--shadow-color) / 0.04);
+  --elev-2: 0 1px 2px hsl(var(--shadow-color) / 0.05), 0 2px 6px hsl(var(--shadow-color) / 0.06), 0 6px 16px -4px hsl(var(--shadow-color) / 0.08);
+  --elev-3: 0 2px 4px hsl(var(--shadow-color) / 0.05), 0 8px 20px -4px hsl(var(--shadow-color) / 0.1), 0 20px 40px -12px hsl(var(--shadow-color) / 0.14);
+  --elev-4: 0 4px 8px hsl(var(--shadow-color) / 0.06), 0 16px 36px -8px hsl(var(--shadow-color) / 0.16), 0 32px 64px -16px hsl(var(--shadow-color) / 0.22);
+
+  /* Glass panels over the map */
+  --glass: color-mix(in oklch, var(--surface) 84%, transparent);
+  --scrim: oklch(0.2 0.02 265 / 0.4);
+
+  /* Safe areas: Capacitor's SystemBars sets --safe-area-inset-*; browsers use env(). */
+  --safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
+  --safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --safe-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+
+  /* Layering above Leaflet (panes ≤ 700, controls 1000) and MapLibre. */
+  --z-map-overlay: 1000;
+  --z-sheet: 1050;
+  --z-header: 1100;
+  --z-popover: 1150;
+  --z-toast: 1200;
+
+  /* Motion */
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 250ms;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: oklch(0.165 0.012 265);
+  --surface: oklch(0.205 0.014 265);
+  --surface-raised: oklch(0.245 0.016 265);
+  --surface-muted: oklch(0.265 0.016 265);
+  --border: oklch(0.3 0.014 265);
+  --border-strong: oklch(0.38 0.016 265);
+  --text: oklch(0.965 0.004 265);
+  --text-muted: oklch(0.74 0.015 265);
+  --text-subtle: oklch(0.66 0.015 265);
+
+  --brand: oklch(0.56 0.21 277);
+  --brand-hover: oklch(0.61 0.2 277);
+  --brand-soft: oklch(0.3 0.08 277);
+  --brand-text: oklch(0.76 0.13 277);
+
+  --success-soft: oklch(0.3 0.06 155);
+  --success-text: oklch(0.8 0.15 155);
+  --warning: oklch(0.8 0.15 75);
+  --warning-soft: oklch(0.32 0.06 70);
+  --warning-text: oklch(0.85 0.14 80);
+  --danger: oklch(0.58 0.2 25);
+  --danger-soft: oklch(0.3 0.08 25);
+  --danger-text: oklch(0.78 0.13 22);
+  --info: oklch(0.58 0.13 240);
+  --info-soft: oklch(0.3 0.06 240);
+  --info-text: oklch(0.8 0.1 240);
+
+  --status-in-transit: oklch(0.6 0.19 300);
+  --status-in-transit-soft: oklch(0.3 0.08 300);
+  --status-in-transit-text: oklch(0.78 0.13 300);
+  --status-cancelled: oklch(0.6 0.012 265);
+  --status-cancelled-soft: oklch(0.28 0.01 265);
+  --status-cancelled-text: oklch(0.76 0.012 265);
+
+  --shadow-color: 230 40% 2%;
+  --elev-1: 0 1px 2px hsl(var(--shadow-color) / 0.4);
+  --elev-2: 0 1px 2px hsl(var(--shadow-color) / 0.35), 0 4px 12px hsl(var(--shadow-color) / 0.35);
+  --elev-3: 0 2px 4px hsl(var(--shadow-color) / 0.35), 0 12px 28px -4px hsl(var(--shadow-color) / 0.5);
+  --elev-4: 0 4px 8px hsl(var(--shadow-color) / 0.4), 0 24px 56px -12px hsl(var(--shadow-color) / 0.65);
+
+  --glass: color-mix(in oklch, var(--surface) 80%, transparent);
+  --scrim: oklch(0.05 0.01 265 / 0.6);
+}
+
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-subtle);
+  --color-ring: var(--brand);
+  --color-glass: var(--glass);
+  --color-scrim: var(--scrim);
+
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-fg: var(--brand-fg);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-text: var(--brand-text);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-text: var(--success-text);
+  --color-warning: var(--warning);
+  --color-warning-fg: var(--warning-fg);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-text: var(--warning-text);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-text: var(--danger-text);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-text: var(--info-text);
+
+  --color-status-pending: var(--status-pending);
+  --color-status-pending-soft: var(--status-pending-soft);
+  --color-status-pending-text: var(--status-pending-text);
+  --color-status-assigned: var(--status-assigned);
+  --color-status-assigned-soft: var(--status-assigned-soft);
+  --color-status-assigned-text: var(--status-assigned-text);
+  --color-status-picked-up: var(--status-picked-up);
+  --color-status-picked-up-soft: var(--status-picked-up-soft);
+  --color-status-picked-up-text: var(--status-picked-up-text);
+  --color-status-in-transit: var(--status-in-transit);
+  --color-status-in-transit-soft: var(--status-in-transit-soft);
+  --color-status-in-transit-text: var(--status-in-transit-text);
+  --color-status-delivered: var(--status-delivered);
+  --color-status-delivered-soft: var(--status-delivered-soft);
+  --color-status-delivered-text: var(--status-delivered-text);
+  --color-status-cancelled: var(--status-cancelled);
+  --color-status-cancelled-soft: var(--status-cancelled-soft);
+  --color-status-cancelled-text: var(--status-cancelled-text);
+
+  --color-pickup: var(--pickup);
+  --color-dropoff: var(--dropoff);
+
+  --shadow-xs: var(--elev-1);
+  --shadow-sm: var(--elev-1);
+  --shadow-md: var(--elev-2);
+  --shadow-lg: var(--elev-3);
+  --shadow-xl: var(--elev-4);
+}
+
+@theme {
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.75rem;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Minimum touch target (WCAG 2.5.8 asks 24px; we use 44px for the rider app). */
+  --spacing-touch: 2.75rem;
+
+  --animate-fade-in: fade-in var(--duration-base) var(--ease-out) both;
+  --animate-slide-up: slide-up var(--duration-slow) var(--ease-out) both;
+  --animate-pop-in: pop-in var(--duration-slow) var(--ease-spring) both;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-live-ping: live-ping 1.8s var(--ease-out) infinite;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Base
+   ══════════════════════════════════════════════════════════════════════════ */
+
+html {
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--bg);
+  color: var(--text);
+  font-feature-settings: "cv11", "ss01";
 }
 
-/* ---------------- Leaflet overrides ---------------- */
+/* One focus style everywhere (inputs swap it for a ring — see components/ui/Field). */
+:where(a, button, summary, select, [tabindex], [role="switch"], [role="radio"]):focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: color-mix(in oklch, var(--brand) 25%, transparent);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(0.92); }
+}
+@keyframes shimmer {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+@keyframes live-ping {
+  0% { transform: scale(1); opacity: 0.7; }
+  80%, 100% { transform: scale(2.6); opacity: 0; }
+}
+
+/* Delivered celebration (TrackOrderView) */
+@keyframes check-draw {
+  from { stroke-dashoffset: 24; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes confetti-fall {
+  0% { transform: translate3d(0, -12px, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translate3d(var(--drift, 0px), 140px, 0) rotate(var(--spin, 360deg)); opacity: 0; }
+}
+.check-draw {
+  stroke-dasharray: 24;
+  animation: check-draw 450ms var(--ease-out) 150ms both;
+}
+.confetti-piece {
+  position: absolute;
+  top: 0;
+  width: 7px;
+  height: 11px;
+  border-radius: 2px;
+  animation: confetti-fall 1.6s var(--ease-out) var(--delay, 0ms) both;
+}
+
+/* Auth brand panel: a rider dot travelling along the route. */
+@keyframes route-dash {
+  to { stroke-dashoffset: -40; }
+}
+@keyframes rider-travel {
+  from { offset-distance: 0%; }
+  to { offset-distance: 100%; }
+}
+
+/* Respect reduced motion everywhere (spinners opt out with data-keep-motion). */
+@media (prefers-reduced-motion: reduce) {
+  *:not([data-keep-motion]),
+  *:not([data-keep-motion])::before,
+  *:not([data-keep-motion])::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .confetti-piece { display: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   View transitions (list → track). See node_modules/next/dist/docs/01-app/02-guides/view-transitions.md
+   ══════════════════════════════════════════════════════════════════════════ */
+
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-old(.nav-forward) {
+  --slide-offset: -48px;
+  animation: 150ms ease-in both vt-fade reverse, 300ms var(--ease-in-out) both vt-slide reverse;
+}
+::view-transition-new(.nav-forward) {
+  --slide-offset: 48px;
+  animation: 200ms ease-out 120ms both vt-fade, 300ms var(--ease-in-out) both vt-slide;
+}
+::view-transition-old(.nav-back) {
+  --slide-offset: 48px;
+  animation: 150ms ease-in both vt-fade reverse, 300ms var(--ease-in-out) both vt-slide reverse;
+}
+::view-transition-new(.nav-back) {
+  --slide-offset: -48px;
+  animation: 200ms ease-out 120ms both vt-fade, 300ms var(--ease-in-out) both vt-slide;
+}
+@keyframes vt-fade {
+  from { opacity: 0; }
+}
+@keyframes vt-slide {
+  from { translate: var(--slide-offset); }
+  to { translate: 0; }
+}
+/* The top bar is the fixed anchor while content slides. */
+::view-transition-group(app-header) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(app-header) {
+  display: none;
+}
+::view-transition-new(app-header) {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Map chrome (Leaflet + MapLibre)
+   --map-inset-bottom / --map-inset-left are set by MapScreen so controls and
+   fit-to-bounds stay clear of the bottom sheet / floating panel.
+   ══════════════════════════════════════════════════════════════════════════ */
 
 .leaflet-container {
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
-  background: #e2e8f0;
+  font-family: var(--font-sans);
+  background: var(--surface-muted);
 }
 /* Background behind tiles while a dark style loads (set by BaseLayer). */
 .leaflet-container.map-dark {
   background: #18181b;
 }
+.leaflet-bottom,
+.map3d .maplibregl-ctrl-bottom-right,
+.map3d .maplibregl-ctrl-bottom-left {
+  bottom: var(--map-inset-bottom, 0px);
+  transition: bottom var(--duration-slow) var(--ease-out);
+}
+.leaflet-control-attribution,
+.map3d .maplibregl-ctrl-attrib {
+  background: var(--glass) !important;
+  color: var(--text-muted) !important;
+  backdrop-filter: blur(8px);
+  border-radius: var(--radius-md) 0 0 0;
+  font-size: 10px !important;
+}
+.leaflet-control-attribution a,
+.map3d .maplibregl-ctrl-attrib a {
+  color: var(--brand-text) !important;
+}
+.leaflet-tooltip {
+  background: var(--surface-raised);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--elev-2);
+  padding: 4px 8px;
+}
+.leaflet-tooltip-top::before { border-top-color: var(--surface-raised); }
+.leaflet-tooltip-bottom::before { border-bottom-color: var(--surface-raised); }
+.leaflet-tooltip-left::before { border-left-color: var(--surface-raised); }
+.leaflet-tooltip-right::before { border-right-color: var(--surface-raised); }
 
 /* Rider marker: body + rotating arrow + soft pulse */
 .rider-marker {
@@ -106,22 +506,20 @@ body {
 /* ---------------- 3D (MapLibre) view ---------------- */
 
 .map3d .maplibregl-map {
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-sans);
 }
 /* Leave room for the "Follow rider" pill in the top-right corner. */
 .map3d .maplibregl-ctrl-top-right {
-  top: 44px;
-}
-.map3d .maplibregl-ctrl-attrib {
-  font-size: 11px;
+  top: 52px;
 }
 .map3d-tooltip .maplibregl-popup-content {
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   font-size: 12px;
   font-weight: 600;
-  color: #0f172a;
-  box-shadow: 0 1px 4px rgb(15 23 42 / 0.25);
+  color: var(--text);
+  background: var(--surface-raised);
+  box-shadow: var(--elev-2);
 }
 .map3d-tooltip .maplibregl-popup-tip {
   display: none;

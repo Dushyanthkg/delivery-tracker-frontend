@@ -1,38 +1,76 @@
-import type { ButtonHTMLAttributes } from 'react';
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { cn } from '@/lib/cn';
+import { Spinner } from './Spinner';
 
-type Variant = 'primary' | 'secondary' | 'danger' | 'success' | 'ghost';
+export type ButtonVariant = 'primary' | 'secondary' | 'soft' | 'ghost' | 'danger' | 'success' | 'glass';
+export type ButtonSize = 'sm' | 'md' | 'lg' | 'xl';
 
-const VARIANTS: Record<Variant, string> = {
-  primary: 'bg-indigo-600 text-white hover:bg-indigo-500 focus-visible:outline-indigo-600',
-  secondary: 'bg-white text-slate-800 ring-1 ring-inset ring-slate-300 hover:bg-slate-50',
-  danger: 'bg-rose-600 text-white hover:bg-rose-500 focus-visible:outline-rose-600',
-  success: 'bg-emerald-600 text-white hover:bg-emerald-500 focus-visible:outline-emerald-600',
-  ghost: 'text-slate-600 hover:bg-slate-100',
+const VARIANTS: Record<ButtonVariant, string> = {
+  primary: 'bg-brand text-brand-fg shadow-sm hover:bg-brand-hover',
+  secondary: 'bg-surface text-text shadow-xs ring-1 ring-inset ring-border-strong hover:bg-surface-muted',
+  soft: 'bg-brand-soft text-brand-text hover:bg-brand-soft/70',
+  ghost: 'text-text-muted hover:bg-surface-muted hover:text-text',
+  danger: 'bg-danger text-white shadow-sm hover:bg-danger/90',
+  success: 'bg-success text-white shadow-sm hover:bg-success/90',
+  glass: 'bg-glass text-text shadow-md ring-1 ring-inset ring-border backdrop-blur-md hover:bg-surface',
 };
 
-interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: Variant;
-  size?: 'sm' | 'md' | 'lg';
-  loading?: boolean;
+const SIZES: Record<ButtonSize, string> = {
+  // sm is 36px visually; the ::after extends the hit area to 44px.
+  sm: 'h-9 gap-1.5 rounded-lg px-3 text-sm after:absolute after:-inset-y-1 after:inset-x-0',
+  md: 'h-11 gap-2 rounded-xl px-4 text-sm',
+  lg: 'h-12 gap-2 rounded-xl px-5 text-base',
+  xl: 'h-14 gap-2.5 rounded-2xl px-6 text-base',
+};
+
+/** Classes for anything that should look like a button (e.g. a Next <Link>). */
+export function buttonClasses({
+  variant = 'primary',
+  size = 'md',
+  className,
+}: { variant?: ButtonVariant; size?: ButtonSize; className?: string } = {}) {
+  return cn(
+    'relative inline-flex select-none items-center justify-center whitespace-nowrap font-semibold',
+    'transition-[transform,background-color,color,box-shadow] duration-(--duration-fast) ease-out',
+    'active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50',
+    '[&_svg]:size-[1.15em] [&_svg]:shrink-0',
+    SIZES[size],
+    VARIANTS[variant],
+    className,
+  );
 }
 
-export function Button({ variant = 'primary', size = 'md', loading, disabled, className, children, ...rest }: Props) {
+interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  loading?: boolean;
+  leftIcon?: ReactNode;
+  rightIcon?: ReactNode;
+}
+
+export function Button({
+  variant = 'primary',
+  size = 'md',
+  loading,
+  disabled,
+  leftIcon,
+  rightIcon,
+  className,
+  children,
+  type = 'button',
+  ...rest
+}: Props) {
   return (
     <button
       {...rest}
+      type={type}
       disabled={disabled || loading}
-      className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-        size === 'sm' && 'px-2.5 py-1.5 text-xs',
-        size === 'md' && 'px-3.5 py-2 text-sm',
-        size === 'lg' && 'px-4 py-3 text-base',
-        VARIANTS[variant],
-        className,
-      )}
+      aria-busy={loading || undefined}
+      className={buttonClasses({ variant, size, className })}
     >
-      {loading && <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />}
+      {loading ? <Spinner size="sm" /> : leftIcon}
       {children}
+      {!loading && rightIcon}
     </button>
   );
 }

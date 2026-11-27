@@ -9,8 +9,12 @@ export type { LiveTrackingMapProps, MapPlace } from './map.types';
 export const LiveTrackingMap = dynamic<LiveTrackingMapProps>(() => import('./LiveTrackingMap'), {
   ssr: false,
   loading: () => (
-    <div className="flex h-full w-full items-center justify-center bg-slate-100 text-sm text-slate-500">
-      Loading map…
+    <div role="status" className="relative h-full w-full overflow-hidden bg-surface-muted">
+      <span className="sr-only">Loading map…</span>
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 animate-shimmer bg-[length:200%_100%] bg-[linear-gradient(90deg,transparent_25%,color-mix(in_oklch,var(--text)_5%,transparent)_50%,transparent_75%)]"
+      />
     </div>
   ),
 });

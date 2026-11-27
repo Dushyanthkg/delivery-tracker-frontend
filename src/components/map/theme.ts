@@ -57,6 +57,8 @@ const customBrandStyle = process.env.NEXT_PUBLIC_MAP_BRAND_STYLE_URL?.trim();
 
 export const mapTheme = {
   defaultStyle: 'brand' as MapStyleId,
+  /** Used instead of `defaultStyle` while the app is in dark mode (until the viewer picks a style). */
+  defaultDarkStyle: 'dark' as MapStyleId,
 
   /** Colours for the Brand style (ignored when a custom brand style URL is set). */
   brand: {
@@ -128,20 +130,27 @@ export const mapTheme = {
     },
   ] satisfies BaseStyle[] as BaseStyle[],
 
+  /*
+   * Brand / place colours below mirror tokens in app/globals.css (as hex, since
+   * Leaflet SVG and MapLibre paint need concrete colours). tokens.test.ts
+   * checks they stay in sync — change both together.
+   */
   rider: {
     /** 'per-rider' gives each rider a stable colour from `palette`. */
     colorMode: 'per-rider' as 'single' | 'per-rider',
+    /** = --brand */
     color: '#4f46e5',
-    palette: ['#4f46e5', '#db2777', '#0891b2', '#ea580c', '#7c3aed', '#059669', '#ca8a04', '#dc2626'],
+    /** Also used for rider avatars, so every entry keeps ≥ 4.5:1 contrast with white initials. */
+    palette: ['#4f46e5', '#db2777', '#0e7490', '#c2410c', '#7c3aed', '#047857', '#a16207', '#b91c1c'],
     offlineColor: '#94a3b8',
     vehicle: 'arrow' as RiderVehicle,
   },
 
   places: {
-    pickup: { color: '#2563eb', glyph: 'P' },
-    dropoff: { color: '#16a34a', glyph: 'D' },
-    order: { color: '#f59e0b', glyph: '•' },
-    draft: { color: '#64748b', glyph: '+' },
+    pickup: { color: '#2867e4', glyph: 'P' }, // = --pickup
+    dropoff: { color: '#11813c', glyph: 'D' }, // = --dropoff
+    order: { color: '#efa30f', glyph: '•' }, // = --status-pending (light)
+    draft: { color: '#6d727b', glyph: '+' }, // = --status-cancelled (light)
   } satisfies Record<PlaceKind, { color: string; glyph: string }>,
 
   /** The viewer's own position ("current location" button). */
@@ -150,6 +159,7 @@ export const mapTheme = {
   },
 
   route: {
+    /** = --brand */
     color: '#4f46e5',
     casing: '#ffffff',
     weight: 5,

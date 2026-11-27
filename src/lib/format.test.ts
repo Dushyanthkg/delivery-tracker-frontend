@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatAgo, formatDistance, formatDuration, STATUS_LABELS } from './format';
+import { formatAgo, formatDistance, formatDuration, formatRelativeDate, STATUS_LABELS } from './format';
 import { homeFor } from './routes';
 import { ORDER_STATUSES } from '@/services/types';
 
@@ -10,6 +10,15 @@ describe('formatters', () => {
     expect(formatDistance(1_000)).toBe('1.0 km');
     expect(formatDistance(7_790)).toBe('7.8 km');
     expect(formatDistance(12_400)).toBe('12 km');
+  });
+
+  it('formatRelativeDate is relative within a day, then a date', () => {
+    const now = Date.parse('2026-11-21T12:00:00Z');
+    expect(formatRelativeDate('2026-11-21T11:48:00Z', now)).toBe('12 min ago');
+    expect(formatRelativeDate('2026-11-21T09:00:00Z', now)).toBe('3 h ago');
+    const older = formatRelativeDate('2026-11-04T09:00:00Z', now);
+    expect(older).not.toMatch(/ago/);
+    expect(older).toMatch(/4/);
   });
 
   it('formatDuration rounds to minutes and hours', () => {

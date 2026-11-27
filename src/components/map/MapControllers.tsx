@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import { useMap, useMapEvents } from 'react-leaflet';
 import type { LatLng } from '@/services/types';
+import { mapInsets } from './insets';
 
 /** Re-fits the viewport whenever `fitKey` changes. */
 export function FitBounds({ points, fitKey }: { points: LatLng[]; fitKey: string | number | null | undefined }) {
@@ -20,7 +21,12 @@ export function FitBounds({ points, fitKey }: { points: LatLng[]; fitKey: string
       map.setView([pts[0]!.lat, pts[0]!.lng], Math.max(map.getZoom(), 15));
       return;
     }
-    map.fitBounds(L.latLngBounds(pts.map((p) => [p.lat, p.lng])), { padding: [48, 48], maxZoom: 16 });
+    const { left, bottom } = mapInsets(map.getContainer());
+    map.fitBounds(L.latLngBounds(pts.map((p) => [p.lat, p.lng])), {
+      paddingTopLeft: [48 + left, 48],
+      paddingBottomRight: [48, 48 + bottom],
+      maxZoom: 16,
+    });
   }, [map, fitKey]);
 
   return null;

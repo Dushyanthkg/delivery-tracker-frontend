@@ -382,3 +382,16 @@ export interface ServerToClientEvents {
   dispatch_offer_cancelled: (payload: DispatchOfferCancelled) => void;
   dispatch_status: (payload: DispatchStatusBroadcast) => void;
 }
+
+/** Address suggestion from GET /geocode/search. */
+export interface PlaceSuggestion {
+  id: string;
+  /** Primary line, e.g. "MG Road Metro Station". */
+  name: string;
+  /** Secondary line, e.g. "Mahatma Gandhi Road, Bengaluru". */
+  detail: string;
+  /** Full single-line address to store on the order. */
+  address: string;
+  lat: number;
+  lng: number;
+}

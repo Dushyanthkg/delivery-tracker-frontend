@@ -40,8 +40,8 @@ export function LocateButton({ onLocate }: { onLocate?: () => void }) {
           locate();
         }}
         className={cn(
-          'grid h-[30px] w-[30px] place-items-center rounded-full bg-white shadow-md transition hover:bg-slate-50',
-          failed ? 'text-rose-500' : 'text-slate-700',
+          'relative grid size-9 place-items-center rounded-full bg-glass shadow-md ring-1 ring-inset ring-border backdrop-blur-md transition-[background-color,transform] duration-(--duration-fast) hover:bg-surface active:scale-95 after:absolute after:-inset-1',
+          failed ? 'text-danger-text' : 'text-text',
         )}
         style={status === 'active' ? { color: mapTheme.myLocation.color } : undefined}
       >
@@ -63,7 +63,7 @@ export function LocateButton({ onLocate }: { onLocate?: () => void }) {
       </button>
 
       {showMessage && (
-        <p role="alert" className="absolute bottom-full right-0 mb-2 w-56 rounded-lg bg-slate-900 px-3 py-2 text-xs text-white shadow-lg">
+        <p role="alert" className="absolute bottom-full right-0 mb-2 w-56 animate-slide-up rounded-xl bg-text px-3 py-2 text-xs text-bg shadow-lg">
           {message}
         </p>
       )}

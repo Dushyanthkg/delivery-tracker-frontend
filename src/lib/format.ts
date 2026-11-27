@@ -23,6 +23,13 @@ export function formatAgo(fromMs: number, nowMs: number): string {
   return m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`;
 }
 
+/** "just now" / "12 min ago" / "3 h ago" within a day, then a short date ("4 Nov"). */
+export function formatRelativeDate(iso: string, nowMs: number): string {
+  const t = Date.parse(iso);
+  if (nowMs - t < 24 * 3_600_000) return formatAgo(t, nowMs);
+  return new Date(t).toLocaleDateString([], { day: 'numeric', month: 'short' });
+}
+
 export const STATUS_LABELS: Record<OrderStatus, string> = {
   pending: 'Awaiting rider',
   assigned: 'Rider assigned',

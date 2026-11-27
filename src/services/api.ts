@@ -7,10 +7,12 @@ import type {
   AuthResponse,
   CreateOrderRequest,
   FleetSnapshot,
+  LatLng,
   LoginRequest,
   NearbyRider,
   Order,
   OrderStatus,
+  PlaceSuggestion,
   RegisterRequest,
   User,
 } from './types';
@@ -81,6 +83,13 @@ export const ordersApi = {
   nearbyRiders: (id: string, maxDistanceMeters = 10_000) =>
     unwrap<NearbyRider[]>(http.get(`/orders/${id}/nearby-riders`, { params: { maxDistanceMeters } })),
   fleet: () => unwrap<FleetSnapshot>(http.get('/orders/fleet')),
+};
+
+export const geocodeApi = {
+  search: (q: string, near?: LatLng | null, signal?: AbortSignal) =>
+    unwrap<PlaceSuggestion[]>(
+      http.get('/geocode/search', { params: { q, lat: near?.lat, lng: near?.lng }, signal }),
+    ),
 };
 
 export function errorMessage(err: unknown): string {

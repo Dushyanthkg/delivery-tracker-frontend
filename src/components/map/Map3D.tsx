@@ -9,6 +9,7 @@ import { getBaseStyle, mapTheme, riderColor, type MapStyleId } from './theme';
 import { placeMarkerHtml, riderMarkerHtml } from './icons';
 import { startRiderGlide } from './riderGlide';
 import { MyLocationLayer3D } from './MyLocation';
+import { mapInsets } from './insets';
 
 /** MapLibre uses 512px tiles, so its zoom is one level below Leaflet's for the same scale. */
 const toGLZoom = (leafletZoom: number) => leafletZoom - 1;
@@ -128,7 +129,14 @@ export function Map3D(props: Map3DProps) {
     }
     const bounds = new maplibregl.LngLatBounds();
     for (const p of pts) bounds.extend([p.lng, p.lat]);
-    map.fitBounds(bounds, { padding: 64, maxZoom: 16, pitch: map.getPitch(), bearing: map.getBearing(), duration: 0 });
+    const inset = mapInsets(map.getContainer());
+    map.fitBounds(bounds, {
+      padding: { top: 64, right: 64, left: 64 + inset.left, bottom: 64 + inset.bottom },
+      maxZoom: 16,
+      pitch: map.getPitch(),
+      bearing: map.getBearing(),
+      duration: 0,
+    });
   }, [map, fitKey]);
 
   // ── pins ────────────────────────────────────────────────────────────────
@@ -157,7 +165,7 @@ export function Map3D(props: Map3DProps) {
   }, [map, places]);
 
   return (
-    <div ref={hostRef} className="map3d relative h-full w-full" style={{ background: getBaseStyle(styleId).dark ? '#18181b' : '#e2e8f0' }}>
+    <div ref={hostRef} className="map3d relative h-full w-full" style={{ background: getBaseStyle(styleId).dark ? '#18181b' : 'var(--surface-muted)' }}>
       {map && <MyLocationLayer3D map={map} />}
       {map &&
         riderIds.map((id) => (

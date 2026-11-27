@@ -3,12 +3,19 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { BellRing, Bike, Check, ChevronRight, Hourglass, Inbox, LocateFixed, PackageSearch, Search, Users } from 'lucide-react';
 import { LiveTrackingMap, type MapPlace } from '@/components/map';
 import { AppShell } from '@/components/ui/AppShell';
+import { Avatar } from '@/components/ui/Avatar';
+import { Badge } from '@/components/ui/Badge';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Alert } from '@/components/ui/Field';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { MapScreen } from '@/components/ui/MapScreen';
+import { Stat } from '@/components/ui/Stat';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { RiderLastSeen } from '@/components/order/EtaPanel';
+import { RouteVisual } from '@/components/order/RouteVisual';
 import { useSocket, useOnConnect, useSocketEvent } from '@/hooks/useSocket';
 import { emitWithAck } from '@/services/socket';
 import { useTrackingStore } from '@/store/useTrackingStore';
@@ -90,114 +97,168 @@ export function DispatchView() {
 
   const onlineCount = riderList.filter((r) => r.endsWith('|1')).length;
 
+  const toggleRider = (id: string) => setFocusRiderId((cur) => (cur === id ? null : id));
+
   return (
-    <AppShell title="Dispatch">
-      <div className="flex flex-1 flex-col lg:flex-row">
-        <div className="relative h-[55dvh] lg:h-auto lg:flex-1">
+    <AppShell title="Dispatch" layout="map">
+      <MapScreen
+        label="Dispatch queue"
+        map={
           <LiveTrackingMap
             route={selected ? (activeLegRoute(selected) ?? selected.route)?.polyline : null}
             places={places}
             riderIds={mappedRiderIds}
             followRiderId={focusRiderId}
             fitKey={selectedId}
-            onRiderClick={(id) => setFocusRiderId((cur) => (cur === id ? null : id))}
+            onRiderClick={toggleRider}
           />
-          <div className="pointer-events-none absolute left-3 top-3 z-[1000] flex gap-2">
-            {[
-              { label: 'Online riders', value: onlineCount, tone: 'text-emerald-600' },
-              { label: 'Active', value: active.length, tone: 'text-indigo-600' },
-              { label: 'Unassigned', value: unassigned.length, tone: 'text-amber-600' },
-            ].map((s) => (
-              <div key={s.label} className="rounded-lg bg-white/95 px-3 py-1.5 shadow-md">
-                <p className={cn('text-lg font-bold leading-none tabular-nums', s.tone)}>{s.value}</p>
-                <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500">{s.label}</p>
-              </div>
-            ))}
+        }
+        peek={
+          <div className="grid grid-cols-3 gap-2 pb-2" role="group" aria-label="Fleet overview">
+            <Stat label="Online riders" value={onlineCount} icon={<Users />} tone="success" />
+            <Stat label="Active" value={active.length} icon={<Bike />} tone="brand" />
+            <Stat label="Unassigned" value={unassigned.length} icon={<Inbox />} tone={unassigned.length ? 'warning' : 'neutral'} />
           </div>
-        </div>
+        }
+      >
+        {error && <Alert>{error}</Alert>}
 
-        <aside className="w-full space-y-4 border-t border-slate-200 bg-slate-50 p-4 lg:w-[400px] lg:overflow-y-auto lg:border-l lg:border-t-0">
-          {error && <Alert>{error}</Alert>}
-
-          <Card>
-            <CardTitle>Unassigned orders ({unassigned.length})</CardTitle>
-            {unassigned.length === 0 && <p className="text-sm text-slate-500">All caught up 🎉</p>}
-            <ul className="space-y-2">
-              {unassigned.map((o) => (
-                <li key={o.id} className={cn('rounded-lg p-3 ring-1 transition', o.id === selectedId ? 'bg-amber-50 ring-amber-300' : 'bg-white ring-slate-200')}>
-                  <button type="button" className="w-full text-left" onClick={() => setSelectedId(o.id === selectedId ? null : o.id)}>
-                    <p className="flex items-center justify-between text-sm font-semibold text-slate-900">
-                      {o.code}
-                      {o.route && <span className="text-xs font-normal text-slate-500">~{formatDuration(o.route.durationSeconds)} trip</span>}
-                    </p>
-                    <p className="truncate text-xs text-slate-500">{o.pickup.address} → {o.dropoff.address}</p>
+        <Card>
+          <CardTitle icon={<PackageSearch />} action={<Badge tone={unassigned.length ? 'warning' : 'neutral'}>{unassigned.length}</Badge>}>
+            Unassigned orders
+          </CardTitle>
+          {unassigned.length === 0 && <EmptyState compact icon={<Check />} title="All caught up" description="New orders appear here the moment they’re placed." />}
+          <ul className="space-y-2">
+            {unassigned.map((o) => {
+              const isSelected = o.id === selectedId;
+              return (
+                <li
+                  key={o.id}
+                  className={cn(
+                    'animate-fade-in rounded-2xl ring-1 transition-[background-color,box-shadow] duration-(--duration-fast)',
+                    isSelected ? 'bg-brand-soft/50 shadow-md ring-2 ring-brand' : 'bg-surface ring-border hover:ring-border-strong',
+                  )}
+                >
+                  <button
+                    type="button"
+                    aria-pressed={isSelected}
+                    className="flex w-full flex-col gap-2 rounded-2xl p-3 text-left"
+                    onClick={() => setSelectedId(isSelected ? null : o.id)}
+                  >
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="flex items-center gap-2">
+                        <span
+                          aria-hidden="true"
+                          className={cn(
+                            'grid size-5 place-items-center rounded-full ring-1 transition-colors',
+                            isSelected ? 'bg-brand text-brand-fg ring-brand' : 'ring-border-strong',
+                          )}
+                        >
+                          {isSelected && <Check className="size-3" strokeWidth={3} />}
+                        </span>
+                        <span className="font-mono text-sm font-semibold text-text">{o.code}</span>
+                      </span>
+                      {o.route && <span className="text-xs tabular-nums text-text-muted">~{formatDuration(o.route.durationSeconds)} trip</span>}
+                    </span>
+                    <RouteVisual compact inline pickup={o.pickup.address} dropoff={o.dropoff.address} />
                     <DispatchProgress orderId={o.id} />
                   </button>
-                  {o.id === selectedId && <NearbyRidersPanel order={o} onAssigned={() => setSelectedId(null)} />}
+                  {isSelected && (
+                    <div className="px-3 pb-3">
+                      <NearbyRidersPanel order={o} onAssigned={() => setSelectedId(null)} />
+                    </div>
+                  )}
                 </li>
-              ))}
-            </ul>
-          </Card>
+              );
+            })}
+          </ul>
+        </Card>
 
-          <Card>
-            <CardTitle>Active deliveries ({active.length})</CardTitle>
-            {active.length === 0 && <p className="text-sm text-slate-500">No deliveries in progress.</p>}
-            <ul className="divide-y divide-slate-100">
-              {active.map((o) => {
-                const isSelected = o.id === selectedId;
-                return (
-                  <li key={o.id} className="flex items-center gap-2 py-1">
-                    {/* Select to show this delivery's road route + pins on the map and follow its rider. */}
-                    <button
-                      type="button"
-                      aria-pressed={isSelected}
-                      onClick={() => {
-                        setSelectedId(isSelected ? null : o.id);
-                        setFocusRiderId(isSelected ? null : (o.rider?.id ?? null));
-                      }}
-                      className={cn(
-                        '-mx-2 min-w-0 flex-1 rounded-lg px-2 py-1.5 text-left transition hover:bg-slate-50',
-                        isSelected && 'bg-indigo-50 hover:bg-indigo-50',
-                      )}
-                    >
-                      <p className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                        {o.code} <StatusBadge status={o.status} />
-                      </p>
-                      <p className="truncate text-xs text-slate-500">{o.rider?.name ?? '—'} · {o.dropoff.address}</p>
-                    </button>
-                    <Link href={`/customer/track/${o.id}`} className="text-xs font-semibold text-indigo-600">Track ›</Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </Card>
-
-          <Card>
-            <CardTitle>Riders</CardTitle>
-            <ul className="divide-y divide-slate-100">
-              {riderList.map((key) => {
-                const [id, name, online] = key.split('|') as [string, string, string];
-                return (
-                  <li key={id}>
-                    <button
-                      type="button"
-                      onClick={() => setFocusRiderId((cur) => (cur === id ? null : id))}
-                      className={cn('-mx-2 flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-slate-50', focusRiderId === id && 'bg-indigo-50')}
-                    >
-                      <span className={cn('h-2.5 w-2.5 rounded-full', online === '1' ? 'bg-emerald-500' : 'bg-slate-300')} />
-                      <span className="flex-1">
-                        <span className="block text-sm font-medium text-slate-900">{name}</span>
-                        {online === '1' ? <RiderLastSeen riderId={id} /> : <span className="text-xs text-slate-400">Offline</span>}
+        <Card>
+          <CardTitle icon={<Bike />} action={<Badge tone="brand">{active.length}</Badge>}>
+            Active deliveries
+          </CardTitle>
+          {active.length === 0 && <p className="text-sm text-text-muted">No deliveries in progress.</p>}
+          <ul className="-mx-2 space-y-1">
+            {active.map((o) => {
+              const isSelected = o.id === selectedId;
+              return (
+                <li key={o.id} className="flex items-center gap-1">
+                  {/* Select to show this delivery's road route + pins on the map and follow its rider. */}
+                  <button
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => {
+                      setSelectedId(isSelected ? null : o.id);
+                      setFocusRiderId(isSelected ? null : (o.rider?.id ?? null));
+                    }}
+                    className={cn(
+                      'flex min-w-0 flex-1 items-center gap-3 rounded-xl px-2 py-2 text-left transition-colors hover:bg-surface-muted',
+                      isSelected && 'bg-brand-soft hover:bg-brand-soft',
+                    )}
+                  >
+                    {o.rider ? <Avatar id={o.rider.id} name={o.rider.name} size="sm" /> : <span className="size-8 shrink-0 rounded-full bg-surface-muted" />}
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-2">
+                        <span className="font-mono text-sm font-semibold text-text">{o.code}</span>
+                        <StatusBadge status={o.status} />
                       </span>
-                      {focusRiderId === id && <span className="text-xs font-semibold text-indigo-600">Following</span>}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </Card>
-        </aside>
-      </div>
+                      <span className="block truncate text-xs text-text-muted">
+                        {o.rider?.name ?? '—'} · {o.dropoff.address}
+                      </span>
+                    </span>
+                  </button>
+                  <Link
+                    href={`/customer/track/${o.id}`}
+                    transitionTypes={['nav-forward']}
+                    aria-label={`Track ${o.code}`}
+                    className="grid size-11 shrink-0 place-items-center rounded-xl text-text-subtle transition-colors hover:bg-surface-muted hover:text-brand-text"
+                  >
+                    <ChevronRight aria-hidden="true" className="size-5" />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+
+        <Card>
+          <CardTitle icon={<Users />} action={<span className="text-xs text-text-muted tabular-nums">{onlineCount} online</span>}>
+            Riders
+          </CardTitle>
+          {riderList.length === 0 && <p className="text-sm text-text-muted">No riders have connected yet.</p>}
+          <ul className="-mx-2 space-y-1">
+            {riderList.map((key) => {
+              const [id, name, online] = key.split('|') as [string, string, string];
+              const following = focusRiderId === id;
+              return (
+                <li key={id}>
+                  <button
+                    type="button"
+                    aria-pressed={following}
+                    onClick={() => toggleRider(id)}
+                    className={cn(
+                      'flex min-h-touch w-full items-center gap-3 rounded-xl px-2 py-1.5 text-left transition-colors hover:bg-surface-muted',
+                      following && 'bg-brand-soft hover:bg-brand-soft',
+                    )}
+                  >
+                    <Avatar id={id} name={name} size="sm" online={online === '1'} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-text">{name}</span>
+                      {online === '1' ? <RiderLastSeen riderId={id} prefix="Seen" /> : <span className="text-xs text-text-subtle">Offline</span>}
+                    </span>
+                    {following && (
+                      <Badge tone="brand" icon={<LocateFixed aria-hidden="true" />}>
+                        Following
+                      </Badge>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      </MapScreen>
     </AppShell>
   );
 }
@@ -208,10 +269,18 @@ function DispatchProgress({ orderId }: { orderId: string }) {
   const now = useNow();
   if (!status) return null;
   const text = describeDispatch(status, now);
+  if (!text) return null;
+  const Icon = status.state === 'searching' ? Search : status.state === 'offered' ? BellRing : Hourglass;
   return (
-    <p className={cn('mt-1 text-xs font-medium', status.state === 'no_riders' ? 'text-amber-600' : 'text-indigo-600')}>
+    <span
+      className={cn(
+        'flex items-center gap-1.5 text-xs font-medium',
+        status.state === 'no_riders' ? 'text-warning-text' : 'text-brand-text',
+      )}
+    >
+      <Icon aria-hidden="true" className={cn('size-3.5 shrink-0', status.state === 'searching' && 'animate-pulse')} />
       {text}
-    </p>
+    </span>
   );
 }
 
@@ -219,13 +288,13 @@ function describeDispatch(s: DispatchStatusBroadcast, now: number | null): strin
   const tried = s.attempts ? ` · ${s.attempts} passed` : '';
   switch (s.state) {
     case 'searching':
-      return `🔎 Finding the nearest rider…${tried}`;
+      return `Finding the nearest rider…${tried}`;
     case 'offered': {
       const left = s.expiresAt && now ? Math.max(0, Math.round((Date.parse(s.expiresAt) - now) / 1000)) : null;
-      return `📲 Offered to ${s.riderName ?? 'rider'}${left != null ? ` · ${left}s` : ''}${tried}`;
+      return `Offered to ${s.riderName ?? 'rider'}${left != null ? ` · ${left}s` : ''}${tried}`;
     }
     case 'no_riders':
-      return `⏳ No riders available nearby — retrying${tried}`;
+      return `No riders available nearby — retrying${tried}`;
     default:
       return '';
   }

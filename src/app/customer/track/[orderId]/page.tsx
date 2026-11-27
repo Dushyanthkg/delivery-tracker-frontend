@@ -4,6 +4,7 @@ import { RoleGuard } from '@/features/auth/RoleGuard';
 import { TrackOrderView } from '@/features/customer/TrackOrderView';
 import { FullPageSpinner } from '@/components/ui/Spinner';
 import { ROLE_SETS } from '@/lib/routes';
+import { PageTransition } from '@/components/ui/PageTransition';
 
 export const metadata: Metadata = { title: 'Live tracking' };
 
@@ -13,9 +14,11 @@ export const metadata: Metadata = { title: 'Live tracking' };
  */
 export default function TrackOrderPage({ params }: PageProps<'/customer/track/[orderId]'>) {
   return (
-    <Suspense fallback={<FullPageSpinner />}>
-      <TrackOrderRoute params={params} />
-    </Suspense>
+    <PageTransition>
+      <Suspense fallback={<FullPageSpinner />}>
+        <TrackOrderRoute params={params} />
+      </Suspense>
+    </PageTransition>
   );
 }
 

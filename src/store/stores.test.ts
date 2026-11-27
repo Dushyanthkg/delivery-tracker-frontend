@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useTrackingStore } from './useTrackingStore';
-import { useMapPrefsStore } from './useMapPrefsStore';
+import { effectiveStyleId, useMapPrefsStore } from './useMapPrefsStore';
 import { activeLegRoute, type GeoPosition, type Order, type RouteInfo } from '@/services/types';
 import { getBaseStyle, mapTheme, riderColor } from '@/components/map/theme';
 
@@ -127,6 +127,27 @@ describe('useMapPrefsStore', () => {
 
     useMapPrefsStore.getState().toggleLayer('route');
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).state.layers.route).toBe(false);
+  });
+
+  it('treats a non-default style saved before styleChosen existed as a manual pick', async () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: { styleId: 'satellite' }, version: 1 }));
+    await useMapPrefsStore.persist.rehydrate();
+    expect(useMapPrefsStore.getState().styleChosen).toBe(true);
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: { styleId: mapTheme.defaultStyle }, version: 1 }));
+    await useMapPrefsStore.persist.rehydrate();
+    expect(useMapPrefsStore.getState().styleChosen).toBe(false);
+  });
+
+  it('follows the app theme until the viewer picks a style', () => {
+    expect(effectiveStyleId(mapTheme.defaultStyle, false, 'light')).toBe(mapTheme.defaultStyle);
+    expect(effectiveStyleId(mapTheme.defaultStyle, false, 'dark')).toBe(mapTheme.defaultDarkStyle);
+    expect(effectiveStyleId('streets', true, 'dark')).toBe('streets');
+
+    useMapPrefsStore.getState().setStyle('streets');
+    expect(useMapPrefsStore.getState()).toMatchObject({ styleId: 'streets', styleChosen: true });
+    useMapPrefsStore.getState().resetStyle();
+    expect(useMapPrefsStore.getState().styleChosen).toBe(false);
   });
 });
 

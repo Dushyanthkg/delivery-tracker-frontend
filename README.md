@@ -62,6 +62,13 @@ src/
 
 - OSM's public tile server (the "Classic" style) is fine for development; for production traffic use a tile provider (MapTiler, Stadia, Thunderforest — all have free tiers).
 
+## Design system
+
+- **Tokens** live in `src/app/globals.css` (oklch, light + dark): surfaces/text, brand, feedback, one set per `OrderStatus`, pickup/drop-off, elevation, radius, motion, z-layers above the map, and safe-area insets (`--safe-*`, fed by Capacitor's `--safe-area-inset-*` or `env()`). Use the utilities (`bg-surface`, `text-muted`, `bg-status-in-transit-soft`…), never raw palette classes.
+- **Theme**: system by default; the viewer can pick Light/Dark (top bar or account menu), stored in `localStorage['dt-theme']`. An inline script in `app/layout.tsx` sets `data-theme` before first paint. The map follows the theme (Brand ↔ Dark) until the viewer picks a style; **Auto** in the map's style panel goes back to following it.
+- `src/app/tokens.test.ts` checks that the map's hex colours (`components/map/theme.ts`) match their tokens and that text pairs meet WCAG AA in both themes.
+- **Primitives** in `components/ui/` (Button, IconButton, Badge, StatusBadge, Avatar, Switch, SegmentedControl, Skeleton, EmptyState, Toast, Tooltip, Stat, Divider, KeyValue). Map screens use `MapScreen`: a draggable bottom sheet on phones, a floating glass panel on lg+, from a single DOM tree.
+
 ## Customising the map
 
 Everything visual lives in `src/components/map/theme.ts`:
